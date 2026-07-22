@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dhiya Temples - Project & Expense Tracker</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Google Font: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root[data-theme="dark"] {
+      --bg-color: #080c14;
+      --card-bg: rgba(18, 26, 43, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --subtext: #9ca3af;
+      --input-bg: #111827;
+      --input-border: #2d3748;
+      --header-glow: radial-gradient(circle at 50% -20%, rgba(217, 70, 239, 0.18), transparent 70%);
+      --theme-home: #f472b6;
+      --theme-dash: #d946ef;
+      --theme-proj: #06b6d4;
+      --theme-exp: #10b981;
+      --theme-rep: #f59e0b;
+      --theme-set: #8b5cf6;
+    }
+
+    :root[data-theme="light"] {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --text: #0f172a;
+      --subtext: #64748b;
+      --input-bg: #f1f5f9;
+      --input-border: #cbd5e1;
+      --header-glow: radial-gradient(circle at 50% -20%, rgba(217, 70, 239, 0.08), transparent 70%);
+      --theme-home: #ec4899;
+      --theme-dash: #c026d3;
+      --theme-proj: #0891b2;
+      --theme-exp: #059669;
+      --theme-rep: #d97706;
+      --theme-set: #7c3aed;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: var(--bg-color); color: var(--text); padding-bottom: 95px; transition: background 0.3s ease, color 0.3s ease; background-image: var(--header-glow); background-repeat: no-repeat; min-height: 100vh; }
+
+    #splash-screen {
+      position: fixed; inset: 0; background: var(--bg-color); z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #splash-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .splash-logo {
+      width: 110px; height: 110px; border-radius: 28px; object-fit: cover;
+      box-shadow: 0 0 35px rgba(217, 70, 239, 0.5); border: 2px solid rgba(255, 255, 255, 0.2);
+      animation: logoPulse 2s infinite ease-in-out;
+    }
+    .splash-title {
+      font-size: 1.6rem; font-weight: 800;
+      background: linear-gradient(135deg, #f472b6, #d946ef);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;
+    }
+    @keyframes logoPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 35px rgba(217, 70, 239, 0.5); }
+      50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(217, 70, 239, 0.75); }
+    }
+
+    .icon-svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: rgba(8, 12, 20, 0.7); backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--card-border); }
+    .brand { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+    .brand img { width: 44px; height: 44px; border-radius: 12px; object-fit: cover; box-shadow: 0 0 16px rgba(217, 70, 239, 0.4); border: 1.5px solid rgba(255, 255, 255, 0.15); }
+    .brand-title { font-weight: 800; font-size: 1.25rem; background: linear-gradient(135deg, #f472b6, #d946ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: rgba(8, 12, 20, 0.88); backdrop-filter: blur(20px); border-top: 1px solid var(--card-border); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
+    .nav-btn { background: none; border: none; color: var(--subtext); display: flex; flex-direction: column; align-items: center; font-size: 0.68rem; font-weight: 600; gap: 4px; flex: 1; cursor: pointer; }
+    .nav-btn.active { color: var(--text); font-weight: 700; }
+
+    body[data-tab="home"] .nav-btn[onclick*="home"] { color: var(--theme-home); }
+    body[data-tab="dashboard"] .nav-btn[onclick*="dashboard"] { color: var(--theme-dash); }
+    body[data-tab="projects"] .nav-btn[onclick*="projects"] { color: var(--theme-proj); }
+    body[data-tab="expenses"] .nav-btn[onclick*="expenses"] { color: var(--theme-exp); }
+    body[data-tab="reports"] .nav-btn[onclick*="reports"] { color: var(--theme-rep); }
+    body[data-tab="settings"] .nav-btn[onclick*="settings"] { color: var(--theme-set); }
+
+    .container { padding: 16px; max-width: 650px; margin: 0 auto; }
+    .page { display: none; }
+    .page.active { display: block; animation: pageSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes pageSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .home-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 4px; }
+    .home-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 22px 14px; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; backdrop-filter: blur(12px); }
+    .home-card .icon-wrapper { width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 2px; }
+    .home-card[data-target="dashboard"] .icon-wrapper { background: rgba(217, 70, 239, 0.12); color: var(--theme-dash); }
+    .home-card[data-target="projects"] .icon-wrapper { background: rgba(6, 182, 212, 0.12); color: var(--theme-proj); }
+    .home-card[data-target="expenses"] .icon-wrapper { background: rgba(16, 185, 129, 0.12); color: var(--theme-exp); }
+    .home-card[data-target="reports"] .icon-wrapper { background: rgba(245, 158, 11, 0.12); color: var(--theme-rep); }
+    .home-card[data-target="settings"] .icon-wrapper { background: rgba(139, 92, 246, 0.12); color: var(--theme-set); }
+    .home-card-title { font-weight: 800; font-size: 1.02rem; color: var(--text); }
+    .home-card-desc { font-size: 0.72rem; color: var(--subtext); line-height: 1.35; }
+
+    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 20px; margin-bottom: 16px; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+    h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 16px; }
+    h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--subtext); margin-bottom: 6px; }
+    input, select, textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text); font-size: 0.95rem; outline: none; }
+    
+    .btn { width: 100%; padding: 13px; border-radius: 12px; border: none; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .btn-proj { background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; }
+    .btn-exp { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .btn-rep { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; margin-bottom: 10px; }
+
+    .chart-box { position: relative; width: 100%; height: 230px; margin-top: 10px; display: flex; justify-content: center; align-items: center; }
+    .list-item { background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); padding: 12px; border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body data-tab="home">
+
+  <div id="splash-screen">
+    <img src="logo.png" alt="Dhiya Temples Logo" class="splash-logo">
+    <div class="splash-title">Dhiya Temples</div>
+  </div>
+
+  <header>
+    <div class="brand" onclick="switchTab('home', document.querySelector('.nav-btn'))">
+      <img src="logo.png" alt="Dhiya Temples Logo">
+      <div class="brand-title">Dhiya Temples</div>
+    </div>
+    <button onclick="toggleDarkMode()" style="background:none; border:none; color:var(--text); cursor:pointer;">
+      <svg class="icon-svg" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </header>
+
+  <div class="container">
+    <!-- HOME PAGE -->
+    <div id="page-home" class="page active">
+      <div class="home-grid">
+        <div class="home-card" data-target="dashboard" onclick="switchTab('dashboard', document.querySelectorAll('.nav-btn')[1])">
+          <div class="icon-wrapper"><svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+          <div class="home-card-title">Dashboard</div>
+          <div class="home-card-desc">Budget overview & stats</div>
+        </div>
+        <div class="home-card" data-target="projects" onclick="switchTab('projects', document.querySelectorAll('.nav-btn')[2])">
+          <div class="icon-wrapper"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="home-card-title">Projects</div>
+          <div class="home-card-desc">Manage temple projects</div>
+        </div>
+        <div class="home-card" data-target="expenses" onclick="switchTab('expenses', document.querySelectorAll('.nav-btn')[3])">
+          <div class="icon-wrapper"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+          <div class="home-card-title">Expenses</div>
+          <div class="home-card-desc">Log costs & materials</div>
+        </div>
+        <div class="home-card" data-target="reports" onclick="switchTab('reports', document.querySelectorAll('.nav-btn')[4])">
+          <div class="icon-wrapper"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="home-card-title">Reports</div>
+          <div class="home-card-desc">PDF & Excel statements</div>
+        </div>
+        <div class="home-card" data-target="settings" style="grid-column: span 2;" onclick="switchTab('settings', document.querySelectorAll('.nav-btn')[5])">
+          <div class="icon-wrapper"><svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09"/></svg></div>
+          <div class="home-card-title">Settings</div>
+          <div class="home-card-desc">App preferences & dark mode</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="page-dashboard" class="page">
+      <h1>Dashboard</h1>
+      <div class="card">
+        <h2>Expense Breakdown</h2>
+        <div class="chart-box">
+          <canvas id="expenseChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJECTS PAGE -->
+    <div id="page-projects" class="page">
+      <h1>Projects</h1>
+      <div class="card">
+        <h2>Create New Project</h2>
+        <div class="form-group">
+          <label for="project-name">Project Name</label>
+          <input type="text" id="project-name" placeholder="e.g. Main Shrine Renovation">
+        </div>
+        <div class="form-group">
+          <label for="project-budget">Allocated Budget ($)</label>
+          <input type="number" id="project-budget" placeholder="5000">
+        </div>
+        <button class="btn btn-proj" onclick="addProject()">Add Project</button>
+      </div>
+      <div class="card">
+        <h2>Active Projects</h2>
+        <div id="projects-list"><p style="color:var(--subtext);">No projects added yet.</p></div>
+      </div>
+    </div>
+
+    <!-- EXPENSES PAGE -->
+    <div id="page-expenses" class="page">
+      <h1>Expenses</h1>
+      <div class="card">
+        <h2>Add Expense Item</h2>
+        <div class="form-group">
+          <label for="item-description">Item Description</label>
+          <input type="text" id="item-description" placeholder="e.g. Copper Wire">
+        </div>
+        <div class="form-group">
+          <label for="expense-category">Category</label>
+          <select id="expense-category">
+            <option value="Materials">Materials</option>
+            <option value="Hardware">Hardware</option>
+            <option value="Tools">Tools</option>
+            <option value="Labour">Labour</option>
+            <option value="Miscellaneous">Miscellaneous</option>
+          </select>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="item-qty-purchased">Purchased Qty</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="number" id="item-qty-purchased" placeholder="5" min="0.01" step="any" oninput="calculateExpenseTotal()">
+              <select id="item-unit" style="width: 110px;" onchange="calculateExpenseTotal()">
+                <option value="pcs">pcs</option>
+                <option value="m">m</option>
+                <option value="L">L</option>
+                <option value="kg">kg</option>
+                <option value="box">box</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="item-total-cost">Total Cost ($)</label>
+            <input type="number" id="item-total-cost" placeholder="50.00" min="0" step="any" oninput="calculateExpenseTotal()">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="item-qty-used">Qty Used</label>
+            <input type="number" id="item-qty-used" placeholder="1" min="0" step="any" oninput="calculateExpenseTotal()">
+          </div>
+          <div class="form-group">
+            <label for="item-calculated-amount">Calculated Cost ($)</label>
+            <input type="number" id="item-calculated-amount" placeholder="0.00" readonly style="background: rgba(255,255,255,0.05); font-weight: 700; color: var(--theme-exp);">
+          </div>
+        </div>
+        <button class="btn btn-exp" onclick="addExpense()">Add Item</button>
+      </div>
+      <div class="card">
+        <h2>Logged Expenses</h2>
+        <div id="expenses-list"><p style="color:var(--subtext);">No expenses recorded yet.</p></div>
+      </div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div id="page-reports" class="page">
+      <h1>Reports</h1>
+      <div class="card">
+        <h2>Export Statements</h2>
+        <button class="btn btn-rep" onclick="exportPDF()">Download PDF Report</button>
+        <button class="btn btn-rep" onclick="exportExcel()">Download Excel Spreadsheet</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div id="page-settings" class="page">
+      <h1>Settings</h1>
+      <div class="card">
+        <h2>App Configuration</h2>
+        <p style="color:var(--subtext); margin-bottom: 12px;">Toggle theme preferences or reset app local storage.</p>
+        <button class="btn" style="background: rgba(239,68,68,0.2); color:#ef4444;" onclick="resetData()">Clear All Data</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav-bar">
+    <button class="nav-btn active" onclick="switchTab('home', this)">
+      <svg class="icon-svg" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </button>
+    <button class="nav-btn" onclick="switchTab('dashboard', this)">
+      <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-btn" onclick="switchTab('projects', this)">
+      <svg class="icon-svg" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      Projects
+    </button>
+    <button class="nav-btn" onclick="switchTab('expenses', this)">
+      <svg class="icon-svg" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Expenses
+    </button>
+    <button class="nav-btn" onclick="switchTab('reports', this)">
+      <svg class="icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+      Reports
+    </button>
+    <button class="nav-btn" onclick="switchTab('settings', this)">
+      <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82"/></svg>
+      Settings
+    </button>
+  </nav>
+
+  <script>
+    let chartInstance = null;
+    let projects = JSON.parse(localStorage.getItem('dhiya_projects') || '[]');
+    let expenses = JSON.parse(localStorage.getItem('dhiya_expenses') || '[]');
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) splash.classList.add('hidden');
+      }, 1500);
+      renderProjects();
+      renderExpenses();
+    });
+
+    function calculateExpenseTotal() {
+      const purchasedQty = parseFloat(document.getElementById('item-qty-purchased').value) || 0;
+      const totalCost = parseFloat(document.getElementById('item-total-cost').value) || 0;
+      const qtyUsedInput = document.getElementById('item-qty-used').value;
+      const qtyUsed = qtyUsedInput !== '' ? parseFloat(qtyUsedInput) : purchasedQty;
+      const calculatedCostInput = document.getElementById('item-calculated-amount');
+
+      if (purchasedQty > 0 && totalCost >= 0) {
+        const unitRate = totalCost / purchasedQty;
+        calculatedCostInput.value = (unitRate * qtyUsed).toFixed(2);
+      } else {
+        calculatedCostInput.value = '0.00';
+      }
+    }
+
+    function addProject() {
+      const name = document.getElementById('project-name').value;
+      const budget = parseFloat(document.getElementById('project-budget').value) || 0;
+      if (!name) { alert('Please enter a project name.'); return; }
+      projects.push({ id: Date.now(), name, budget });
+      localStorage.setItem('dhiya_projects', JSON.stringify(projects));
+      document.getElementById('project-name').value = '';
+      document.getElementById('project-budget').value = '';
+      renderProjects();
+      alert('Project added successfully!');
+    }
+
+    function renderProjects() {
+      const container = document.getElementById('projects-list');
+      if (!projects.length) { container.innerHTML = '<p style="color:var(--subtext);">No projects added yet.</p>'; return; }
+      container.innerHTML = projects.map(p => `
+        <div class="list-item">
+          <div><strong>${p.name}</strong><br><small style="color:var(--subtext);">Budget: $${p.budget.toFixed(2)}</small></div>
+          <button onclick="deleteProject(${p.id})" style="background:none; border:none; color:#ef4444; cursor:pointer;">Delete</button>
+        </div>
+      `).join('');
+    }
+
+    function deleteProject(id) {
+      projects = projects.filter(p => p.id !== id);
+      localStorage.setItem('dhiya_projects', JSON.stringify(projects));
+      renderProjects();
+    }
+
+    function addExpense() {
+      const desc = document.getElementById('item-description').value;
+      const cat = document.getElementById('expense-category').value;
+      const amt = parseFloat(document.getElementById('item-calculated-amount').value) || 0;
+      const unit = document.getElementById('item-unit').value;
+      if (!desc) { alert('Please enter an item description.'); return; }
+      expenses.push({ id: Date.now(), description: desc, category: cat, amount: amt, unit });
+      localStorage.setItem('dhiya_expenses', JSON.stringify(expenses));
+      document.getElementById('item-description').value = '';
+      document.getElementById('item-qty-purchased').value = '';
+      document.getElementById('item-total-cost').value = '';
+      document.getElementById('item-qty-used').value = '';
+      document.getElementById('item-calculated-amount').value = '';
+      renderExpenses();
+      alert('Expense added successfully!');
+    }
+
+    function renderExpenses() {
+      const container = document.getElementById('expenses-list');
+      if (!expenses.length) { container.innerHTML = '<p style="color:var(--subtext);">No expenses recorded yet.</p>'; return; }
+      container.innerHTML = expenses.map(e => `
+        <div class="list-item">
+          <div><strong>${e.description}</strong> (${e.category})<br><small style="color:var(--subtext);">Cost: $${Number(e.amount).toFixed(2)}</small></div>
+          <button onclick="deleteExpense(${e.id})" style="background:none; border:none; color:#ef4444; cursor:pointer;">Delete</button>
+        </div>
+      `).join('');
+    }
+
+    function deleteExpense(id) {
+      expenses = expenses.filter(e => e.id !== id);
+      localStorage.setItem('dhiya_expenses', JSON.stringify(expenses));
+      renderExpenses();
+    }
+
+    function updateDashboardChart() {
+      const ctx = document.getElementById('expenseChart');
+      if (!ctx) return;
+      const categories = ['Materials', 'Hardware', 'Tools', 'Labour', 'Miscellaneous'];
+      const totals = categories.map(cat => {
+        return expenses.filter(e => e.category === cat).reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      });
+      if (chartInstance) chartInstance.destroy();
+      const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#f3f4f6';
+
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: categories,
+          datasets: [{
+            data: totals,
+            backgroundColor: ['#06b6d4', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'],
+            borderWidth: 0,
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: textColor, font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' }, padding: 14, usePointStyle: true, pointStyle: 'circle' }
+            }
+          },
+          cutout: '72%'
+        }
+      });
+    }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      const activePage = document.getElementById(`page-${tabId}`);
+      if (activePage) activePage.classList.add('active');
+      if (btn) btn.classList.add('active');
+      document.body.setAttribute('data-tab', tabId);
+      if (tabId === 'dashboard') {
+        updateDashboardChart();
+      }
+    }
+
+    function exportPDF() {
+      const element = document.getElementById('page-expenses');
+      html2pdf().from(element).save('Dhiya_Temples_Report.pdf');
+    }
+
+    function exportExcel() {
+      const worksheet = XLSX.utils.json_to_sheet(expenses);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Expenses");
+      XLSX.writeFile(workbook, "Dhiya_Temples_Expenses.xlsx");
+    }
+
+    function resetData() {
+      if (confirm('Are you sure you want to clear all data?')) {
+        localStorage.clear();
+        projects = [];
+        expenses = [];
+        renderProjects();
+        renderExpenses();
+        alert('Data cleared.');
+      }
+    }
+
+    function toggleDarkMode() {
+      const current = document.documentElement.getAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    }
+  </script>
+</body>
+</html>
