@@ -1,0 +1,21 @@
+{
+  "name": "Dhiya Temples Tracker",
+  "short_name": "Dhiya Temples",
+  "description": "Temple project and expense tracker with multi-unit calculation and reporting.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#080c14",
+  "theme_color": "#0b0f19",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
